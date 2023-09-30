@@ -6,14 +6,17 @@ from operator import itemgetter
 from typing import AsyncIterator, Dict, List, Optional, Sequence
 
 import langsmith
-
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from langchain.callbacks.tracers.log_stream import RunLogPatch
 from langchain.chat_models import ChatOpenAI
+from langchain.embeddings import OpenAIEmbeddings
 from langchain.prompts import (ChatPromptTemplate, MessagesPlaceholder,
                                PromptTemplate)
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import (
+    DocumentCompressorPipeline, EmbeddingsFilter)
 from langchain.schema import Document
 from langchain.schema.document import Document
 from langchain.schema.language_model import BaseLanguageModel
@@ -21,10 +24,7 @@ from langchain.schema.messages import AIMessage, HumanMessage
 from langchain.schema.output_parser import StrOutputParser
 from langchain.schema.retriever import BaseRetriever
 from langchain.schema.runnable import Runnable, RunnableMap
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain.retrievers.document_compressors import DocumentCompressorPipeline, EmbeddingsFilter
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings import OpenAIEmbeddings
 from langsmith import Client
 from pydantic import BaseModel
 
@@ -84,9 +84,11 @@ app.add_middleware(
 from enum import Enum
 from typing import List, Optional
 
+
 class SearchDepth(Enum):
     BASIC = "basic"
     ADVANCED = "advanced"
+
 
 class TavilyRetriever(BaseRetriever):
     k: int = 10
@@ -102,10 +104,21 @@ class TavilyRetriever(BaseRetriever):
 
         tavily = Client(api_key=os.environ["TAVILY_API_KEY"])
         max_results = self.k if not self.include_generated_answer else self.k - 1
-        response = tavily.search(query=query, max_results=max_results, search_depth=self.search_depth.value, include_answer=self.include_generated_answer, include_domains=self.include_domains, exclude_domains=self.exclude_domains, include_raw_content=self.include_raw_content, include_images=self.include_images)
+        response = tavily.search(
+            query=query,
+            max_results=max_results,
+            search_depth=self.search_depth.value,
+            include_answer=self.include_generated_answer,
+            include_domains=self.include_domains,
+            exclude_domains=self.exclude_domains,
+            include_raw_content=self.include_raw_content,
+            include_images=self.include_images,
+        )
         docs = [
             Document(
-                page_content=result.get("content", "") if not self.include_raw_content else result.get("raw_content", ""),
+                page_content=result.get("content", "")
+                if not self.include_raw_content
+                else result.get("raw_content", ""),
                 metadata={
                     "title": result.get("title", ""),
                     "source": result.get("url", ""),
@@ -114,13 +127,22 @@ class TavilyRetriever(BaseRetriever):
                         for k, v in result.items()
                         if k not in ("content", "title", "url", "raw_content")
                     },
-                    "images": response.get("images")
+                    "images": response.get("images"),
                 },
             )
             for result in response.get("results")
         ]
         if self.include_generated_answer:
-            docs = [Document(page_content=response.get("answer", ""), metadata={"title": "Suggested Answer", "source": "https://tavily.com/"}), *docs]
+            docs = [
+                Document(
+                    page_content=response.get("answer", ""),
+                    metadata={
+                        "title": "Suggested Answer",
+                        "source": "https://tavily.com/",
+                    },
+                ),
+                *docs,
+            ]
 
         return docs
 
@@ -130,10 +152,12 @@ def get_retriever():
     splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=20)
     relevant_filter = EmbeddingsFilter(embeddings=embeddings, similarity_threshold=0.8)
     pipeline_compressor = DocumentCompressorPipeline(
-      transformers=[splitter, relevant_filter]
+        transformers=[splitter, relevant_filter]
     )
-    retriever = TavilyRetriever(k=6, include_raw_content=True, include_images=True)
-    return ContextualCompressionRetriever(base_compressor=pipeline_compressor, base_retriever=retriever)
+    base_retriever = TavilyRetriever(k=6, include_raw_content=True, include_images=True)
+    return ContextualCompressionRetriever(
+        base_compressor=pipeline_compressor, base_retriever=base_retriever
+    ).with_config(run_name="ContextualCompressionRetriever")
 
 
 def create_retriever_chain(
@@ -162,7 +186,7 @@ def create_retriever_chain(
 def format_docs(docs: Sequence[Document]) -> str:
     formatted_docs = []
     if all(doc.metadata.get("score") is not None for doc in docs):
-      docs = sorted(docs, key=lambda doc: doc.metadata.get("score"))
+        docs = sorted(docs, key=lambda doc: doc.metadata.get("score"))
     for i, doc in enumerate(docs):
         doc_string = f"<doc id='{i}'>{doc.page_content}</doc>"
         formatted_docs.append(doc_string)
