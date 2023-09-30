@@ -17,6 +17,7 @@ tiktoken = "^0.4.0"
 weaviate-client = "^3.23.2"
 psycopg2 = "^2.9.7"
 lxml = "^4.9.3"
+tavily-python = "^0.1.9"
 
 
 [tool.poetry.group.dev.dependencies]

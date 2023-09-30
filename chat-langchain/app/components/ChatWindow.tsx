@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
+
 import { v4 as uuidv4 } from "uuid";
 import { EmptyState } from "../components/EmptyState";
 import { ChatMessageBubble, Message } from "../components/ChatMessageBubble";
@@ -19,8 +20,10 @@ import {
   InputGroup,
   InputRightElement,
   Spinner,
+  Card,
+  CardBody,
 } from "@chakra-ui/react";
-import { ArrowUpIcon, SpinnerIcon } from "@chakra-ui/icons";
+import { ArrowUpIcon } from "@chakra-ui/icons";
 import { Source } from "./SourceBubble";
 
 export function ChatWindow(props: {
@@ -164,28 +167,21 @@ export function ChatWindow(props: {
       });
   };
 
-  const animateButton = (buttonId: string) => {
-    const button = document.getElementById(buttonId);
-    button!.classList.add("animate-ping");
-    setTimeout(() => {
-      button!.classList.remove("animate-ping");
-    }, 500);
-  };
-
   const sendInitialQuestion = async (question: string) => {
     await sendMessage(question);
   };
 
   return (
-    <div className="flex flex-col items-center p-8 rounded grow max-h-full">
+    <div className={"flex flex-col items-center p-8 rounded grow max-h-full h-full" + (messages.length === 0 ? " justify-center mb-32" : "")}>
       {messages.length > 0 && (
         <Flex direction={"column"} alignItems={"center"} paddingBottom={"20px"}>
           <Heading fontSize="2xl" fontWeight={"medium"} mb={1} color={"white"}>
             {titleText}
           </Heading>
           <Heading fontSize="md" fontWeight={"normal"} mb={1} color={"white"}>
-            We appreciate feedback!
+            Powered by <a target="_blank" href="https://tavily.com">Tavily</a>
           </Heading>
+          <Heading fontSize="lg" fontWeight={"normal"} mb={1} color={"white"}>We appreciate feedback!</Heading>
         </Flex>
       )}
       <div
@@ -215,7 +211,7 @@ export function ChatWindow(props: {
           height={"55px"}
           rounded={"full"}
           type={"text"}
-          placeholder="What is LangChain Expression Language?"
+          placeholder="Ask anything..."
           textColor={"white"}
           borderColor={"rgb(58, 58, 61)"}
           onSubmit={(e) => {
@@ -244,6 +240,33 @@ export function ChatWindow(props: {
           />
         </InputRightElement>
       </InputGroup>
+      {messages.length === 0 ? (<div className="w-full text-center flex flex-col">
+        <div className="flex grow justify-center w-full mt-4">
+          <div onMouseUp={(e) => sendInitialQuestion((e.target as HTMLDivElement).innerText)}  className="bg-[rgb(58,58,61)] px-2 py-1 mx-2 rounded cursor-pointer justify-center text-gray-400 hover:bg-[rgb(78,78,81)]">
+            what is langchain?
+          </div>
+          <div onMouseUp={(e) => sendInitialQuestion((e.target as HTMLDivElement).innerText)}  className="bg-[rgb(58,58,61)] px-2 py-1 mx-2 rounded cursor-pointer justify-center text-gray-400 hover:bg-[rgb(78,78,81)]">
+            history of mesopotamia
+          </div>
+          <div onMouseUp={(e) => sendInitialQuestion((e.target as HTMLDivElement).innerText)}  className="bg-[rgb(58,58,61)] px-2 py-1 mx-2 rounded cursor-pointer justify-center text-gray-400 hover:bg-[rgb(78,78,81)]">
+            how to build a discord bot
+          </div>
+          <div onMouseUp={(e) => sendInitialQuestion((e.target as HTMLDivElement).innerText)}  className="bg-[rgb(58,58,61)] px-2 py-1 mx-2 rounded cursor-pointer justify-center text-gray-400 hover:bg-[rgb(78,78,81)]">
+            leonardo dicaprio girlfriend
+          </div>
+        </div>
+        <div className="flex grow justify-center w-full mt-4">
+          <div onMouseUp={(e) => sendInitialQuestion((e.target as HTMLDivElement).innerText)}  className="bg-[rgb(58,58,61)] px-2 py-1 mx-2 rounded cursor-pointer justify-center text-gray-400 hover:bg-[rgb(78,78,81)]">
+            fun gift ideas for software engineers
+          </div>
+          <div onMouseUp={(e) => sendInitialQuestion((e.target as HTMLDivElement).innerText)}  className="bg-[rgb(58,58,61)] px-2 py-1 mx-2 rounded cursor-pointer justify-center text-gray-400 hover:bg-[rgb(78,78,81)]">
+            how does a prism separate light
+          </div>
+          <div onMouseUp={(e) => sendInitialQuestion((e.target as HTMLDivElement).innerText)}  className="bg-[rgb(58,58,61)] px-2 py-1 mx-2 rounded cursor-pointer justify-center text-gray-400 hover:bg-[rgb(78,78,81)]">
+            what bear is best
+          </div>
+        </div>
+      </div>) : ""}
     </div>
   );
 }

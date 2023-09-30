@@ -46,7 +46,10 @@ const filterSources = (sources: Source[]) => {
       indexMap.set(i, filtered.length);
       filtered.push(source);
     } else {
-      indexMap.set(i, index);
+      const resolvedIndex = indexMap.get(index);
+      if (resolvedIndex !== undefined) {
+        indexMap.set(i, resolvedIndex);
+      }
     }
   });
   return { filtered, indexMap };
@@ -64,35 +67,41 @@ const createAnswerElements = (
   const matches = Array.from(content.matchAll(/\[\^?(\d+)\^?\]/g));
   const elements: JSX.Element[] = [];
   let prevIndex = 0;
-
-  matches.forEach((match) => {
+  matches.forEach((match, i) => {
     const sourceNum = parseInt(match[1], 10);
     const resolvedNum = sourceIndexMap.get(sourceNum) ?? 10;
+    const nextMatch = matches[i + 1];
+    const nextSourceNum = nextMatch && parseInt(nextMatch[1], 10);
+    const nextResolvedNum = nextSourceNum && sourceIndexMap.get(nextSourceNum);
     if (match.index !== null && resolvedNum < filteredSources.length) {
       elements.push(
         <span
           key={`content:${prevIndex}`}
           dangerouslySetInnerHTML={{
-            __html: content.slice(prevIndex, match.index),
+            __html: content.slice(prevIndex, match.index).trim(),
           }}
         ></span>
       );
-      elements.push(
-        <InlineCitation
-          key={`citation:${prevIndex}`}
-          source={filteredSources[resolvedNum]}
-          sourceNumber={resolvedNum}
-          highlighted={highlighedSourceLinkStates[resolvedNum]}
-          onMouseEnter={() =>
-            setHighlightedSourceLinkStates(
-              filteredSources.map((_, i) => i === resolvedNum)
-            )
-          }
-          onMouseLeave={() =>
-            setHighlightedSourceLinkStates(filteredSources.map(() => false))
-          }
-        />
-      );
+      if (nextResolvedNum !== resolvedNum) {
+        elements.push(
+          <span className="ml-1" key={`span:${prevIndex}`}>
+            <InlineCitation
+              key={`citation:${prevIndex}`}
+              source={filteredSources[resolvedNum]}
+              sourceNumber={resolvedNum}
+              highlighted={highlighedSourceLinkStates[resolvedNum]}
+              onMouseEnter={() =>
+                setHighlightedSourceLinkStates(
+                  filteredSources.map((_, i) => i === resolvedNum)
+                )
+              }
+              onMouseLeave={() =>
+                setHighlightedSourceLinkStates(filteredSources.map(() => false))
+              }
+            />
+          </span>
+        );
+      }
       prevIndex = (match?.index ?? 0) + match[0].length;
     }
   });
@@ -102,6 +111,7 @@ const createAnswerElements = (
       dangerouslySetInnerHTML={{ __html: content.slice(prevIndex) }}
     ></span>
   );
+  console.log(filteredSources[0])
   return elements;
 };
 
