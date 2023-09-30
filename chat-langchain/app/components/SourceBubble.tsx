@@ -5,6 +5,7 @@ import { Card, CardBody, Heading } from '@chakra-ui/react'
 export type Source = {
   url: string;
   title: string;
+  images: string[];
 };
 
 export function SourceBubble(props: {

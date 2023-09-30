@@ -111,7 +111,6 @@ const createAnswerElements = (
       dangerouslySetInnerHTML={{ __html: content.slice(prevIndex) }}
     ></span>
   );
-  console.log(filteredSources[0])
   return elements;
 };
 
@@ -238,6 +237,9 @@ export function ChatMessageBubble(props: {
         )
       : [];
 
+  const imageUrls = filteredSources[0]?.images ?? [];
+  const imageElements = imageUrls.map((imageUrl) => <img key={`image:${imageUrl}`} src={imageUrl} className="block h-full mr-2"></img>)
+
   const animateButton = (buttonId: string) => {
     let button: HTMLButtonElement | null;
     if (buttonId === "upButton") {
@@ -318,9 +320,16 @@ export function ChatMessageBubble(props: {
           {content}
         </Heading>
       ) : (
-        <Box className="whitespace-pre-wrap" color="white">
-          {answerElements}
-        </Box>
+        <>
+          <Box className="whitespace-pre-wrap" color="white">
+            {answerElements}
+          </Box>
+          {(imageUrls.length && props.messageCompleted) ? (
+            <Flex className="w-full max-w-full flex h-[282px] overflow-auto">
+              {imageElements}
+            </Flex>
+          ) : ""}
+        </>
       )}
 
       {props.message.role !== "user" &&

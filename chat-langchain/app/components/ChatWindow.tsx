@@ -121,6 +121,7 @@ export function ChatWindow(props: {
             ...prevChatHistory,
             { human: messageValue, ai: accumulatedMessage },
           ]);
+          setIsLoading(false);
           return Promise.resolve();
         }
 
@@ -159,7 +160,6 @@ export function ChatWindow(props: {
           }
           return newMessages;
         });
-        setIsLoading(false);
         return reader.read().then(processText);
       })
       .catch((error) => {
